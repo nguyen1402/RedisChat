@@ -4,7 +4,6 @@ namespace RedisChat.Models
 {
     public class GroupChat
     {
-        [Required(ErrorMessage = "Vui lòng tạo GroupName")]
         public string GroupName { get; set; }
         public string Password { get; set; }
         public string CreateBy { get; set; }
