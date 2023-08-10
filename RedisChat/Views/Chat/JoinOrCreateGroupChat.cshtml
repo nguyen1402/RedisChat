@@ -1,0 +1,11 @@
+﻿@model UserGroupChat
+@using (Html.BeginForm("JoinOrCreateGroupChat", "Chat", FormMethod.Post))
+{
+    <div class="form-group">
+        <label style="font:bolder">Tên người dùng</label>
+        @Html.TextBoxFor(model => model.UserName, new { @class = "form-control" })
+        @Html.ValidationMessageFor(model => model.UserName, "", new { @class = "text-danger" })
+    </div>
+    <button type="submit" class="btn btn-primary">Vào</button>
+}
+

@@ -1,0 +1,31 @@
+﻿
+<h3 class="pb-3">Xin chào, @ViewBag.UserName !</h3>
+
+@using (Html.BeginForm("ChooseAction", "Chat", FormMethod.Post, new { id = "createForm" }))
+{
+    <div class="row">
+        <div class="col-auto">
+            <!-- Nút "Tham gia nhóm chat" -->
+            <button type="button" class="btn btn-outline-primary" onclick="joinGroupChat()">Tham gia </button>
+        </div>
+
+        <div class="col-auto">
+            <!-- Nút "Tạo nhóm chat" -->
+            <button type="button" class="btn btn-outline-success" onclick="creatGroupChat()">Tạo nhóm</button>
+        </div>
+    </div>
+
+    <!-- Các input hidden cần thiết -->
+    <input type="hidden" name="createGroupChat" id="createGroupChat" value="false" />
+}
+
+<script>
+    function joinGroupChat() {
+        document.getElementById("createForm").submit();
+    }
+
+    function creatGroupChat() {
+        document.getElementById("createGroupChat").value = "true";
+        document.getElementById("createForm").submit();
+    }
+</script>

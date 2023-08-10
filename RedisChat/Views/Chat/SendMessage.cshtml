@@ -1,0 +1,25 @@
+﻿@model ChatMessage
+
+@{
+    ViewData["Title"] = "Send Message";
+}
+
+<div class="container">
+    <h1>Send Message</h1>
+
+    <form id="send-message-form" method="post" asp-action="SendMessage">
+        <div>
+            <input type="text" asp-for="UserName" value="@ViewBag.UserName" hidden />
+            <input type="text" asp-for="GroupName" value="@ViewBag.GroupChatCode" hidden />
+        </div>
+        <div>
+            <label for="MessageContent">Message:</label>
+            <textarea asp-for="MessageContent" required></textarea>
+        </div>
+
+        <button class="btn btn-outline-primary" type="submit">Send</button>
+    </form>
+</div>
+
+
+

@@ -1,0 +1,79 @@
+﻿@model List<GroupChat>
+
+@{
+    ViewData["Title"] = "Chat Groups";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewData["Title"]</title>
+</head>
+<body>
+    <div class="container">
+        <div class="container">
+            <h2>Tạo mới group</h2>
+            <form id="chat-form" method="post" asp-action="CreateGroupChats">
+                <div class="row">
+                    <div class="col-6">
+                        <input type="text" class="form-control" name="GroupName" id="GroupName" placeholder="RANDOM" readonly>
+                    </div>
+                    <div class="col-3">
+                        <p onclick="generateCode()" class="btn btn-success mb-3">Tạo</p>
+                    </div>
+                </div>
+                <div class="row">
+                    <input class="col-3 form-control" type="text" name="Password" placeholder="Password" required />
+                </div>
+                <div class="row">
+                    <div class="col-3">
+                        <label for="Public">Public:</label>
+                        <input type="radio" id="PublicTrue" name="Public" value="true" checked>
+                        <label for="PublicTrue">True</label>
+                        <input type="radio" id="PublicFalse" name="Public" value="false">
+                        <label for="PublicFalse">False</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <button class="btn btn-primary mb-3 mt-3" type="submit">Tạo Nhóm</button>
+                </div>
+            </form>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Password</th>
+                    <th scope="col">Go</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count() > 0)
+                {
+                    foreach (var group in Model)
+                    {
+                        <tr>
+                            <td>@group.GroupName</td>
+                            <td>@group.Password</td>
+                            <td><a class="btn btn-outline-primary" href="@Url.Action("Index", "Chat", new { groupName = group.GroupName })">Here</a></td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                <td><p>Hiện tại bạn chưa tạo phòng nào !</p></td>
+                }
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+<script>
+    function generateCode() {
+        var code = Math.random().toString(36).substring(2, 14).toUpperCase();
+        document.getElementById("GroupName").value = code;
+    }
+</script>
+
+

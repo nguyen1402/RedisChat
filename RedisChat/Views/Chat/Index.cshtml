@@ -1,0 +1,112 @@
+﻿@model List<ChatMessage>
+@{
+    ViewData["Title"] = @ViewBag.UserName + "- Phòng - " + @ViewBag.GroupName;
+}
+
+<h3>@ViewData["Title"]</h3>
+
+<hr />
+<div id="real-chat-messages" style="height: 600px; overflow-y: scroll;">
+    @foreach (var message in Model)
+    {
+        <div class="message">
+            <p><strong>@message.UserName</strong> (@message.TimeStamp.ToString("HH:mm:ss"))</p>
+            <p>@message.MessageContent</p>
+        </div>
+    }
+</div>
+<hr />
+
+
+<form id="return-chat" method="post">
+    <div class="row">
+        <p id="token-faile" class="text-center" style="color:red;font-size:larger">Bạn đã bị hết phiên làm việc !</p>
+    </div>
+    <div class="row">
+        <div class="col-auto">
+            <a class="btn btn-outline-success" id="refresh-button" href="@Url.Action("Index", "Chat", new { groupName = @ViewBag.GroupName })">Làm mới</a>
+        </div>
+        <div class="col-auto">
+            <a class="btn btn-outline-danger" id="home-button" href="@Url.Action("JoinOrCreateGroupChat", "Chat")">Trang chủ</a>
+        </div>
+    </div>
+</form>
+
+<form id="chat-form" method="post">
+    <div class="row">
+        <div class="col-11">
+            <input class="form-control" type="text" id="text-ip" name="message" placeholder="Nội dung ..." required />
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-outline-primary" id="send-button" type="submit">Gửi</button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
+    <script>
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .build();
+
+        connection.on("ReceiveMessage", function (chatMessage) {
+            var utcTimeStamp = new Date(chatMessage.timeStamp);
+            var utcHours = utcTimeStamp.getUTCHours().toString().padStart(2, "0");
+            var utcMinutes = utcTimeStamp.getUTCMinutes().toString().padStart(2, "0");
+            var utcSeconds = utcTimeStamp.getUTCSeconds().toString().padStart(2, "0");
+
+            var formattedUtcTime = `${utcHours}:${utcMinutes}:${utcSeconds}`;
+
+            var messageDiv = document.createElement("div");
+            messageDiv.className = "message";
+            messageDiv.innerHTML = `<p><strong>${chatMessage.userName}</strong> (${formattedUtcTime})</p>
+                                                                                                                        <p>${chatMessage.messageContent}</p>`;
+            document.getElementById("real-chat-messages").appendChild(messageDiv);
+        });
+
+        document.getElementById("chat-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+            var messageInput = document.querySelector("input[name='message']");
+            var message = messageInput.value.trim();
+            if (message) {
+                connection.invoke("SendMessage", {
+                    userName: "@ViewBag.UserName",
+                    groupName: "@ViewBag.GroupName",
+                    messageContent: message,
+                }).catch(function (err) {
+                    console.error(err.toString());
+                });
+                messageInput.value = "";
+            }
+        });
+
+        connection.on("UpdateConnectionStatus", function (isConnected) {
+            if (isConnected) {
+                document.getElementById("send-button").style.display = "block";
+                document.getElementById("text-ip").style.display = "block";
+                document.getElementById("refresh-button").style.display = "none";
+                document.getElementById("home-button").style.display = "none";
+                document.getElementById("token-faile").style.display = "none";
+            } else {
+                document.getElementById("send-button").style.display = "none";
+                document.getElementById("text-ip").style.display = "none";
+                document.getElementById("refresh-button").style.display = "block";
+                document.getElementById("home-button").style.display = "block";
+                document.getElementById("token-faile").style.display = "block";
+            }
+        });
+
+        connection.start().then(function () {
+            joinGroup("@ViewBag.GroupName");
+        }).catch(function (err) {
+            console.error(err.toString());
+        });
+
+        function joinGroup(groupName) {
+            connection.invoke("JoinGroup", groupName).catch(function (err) {
+                console.error(err.toString());
+            });
+        }
+    </script>
+}

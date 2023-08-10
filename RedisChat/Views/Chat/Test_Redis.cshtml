@@ -1,0 +1,58 @@
+﻿@model List<ChatMessage>
+@{
+    ViewData["Title"] = "Realtime Chat";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div id="real-chat-messages" style="height: 600px; overflow-y: scroll;">
+    @foreach (var message in Model)
+    {
+        <div class="message">
+            <p><strong>@message.UserName</strong> (@message.TimeStamp.ToString("HH:mm:ss"))</p>
+            <p>@message.MessageContent</p>
+        </div>
+    }
+</div>
+
+<form action="SendMessage" method="post">
+    <input type="text" name="UserName" value="@ViewBag.UserName" hidden />
+    <input type="text" name="GroupName" value="@ViewBag.GroupName" hidden />
+    <input type="text" name="MessageContent" placeholder="Your message" required />
+    <button type="submit">Send</button>
+</form>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/ioredis@5.3.2/built/index.min.js"></script>
+    <script>
+        const redis = new Redis({
+            host: 'redis-16227.c278.us-east-1-4.ec2.cloud.redislabs.com',
+            port: 16227,
+            password: 'SlJ3AuLw1i6SuLSj3restUqag7kp2SXq'
+        });
+
+        var channelName = "@ViewBag.GroupName";
+
+        redis.subscribe(channelName, function (err, count) {
+            if (err) {
+                console.error(err);
+            }
+
+            redis.on('message', function (channel, message) {
+                var utcTimeStamp = new Date(chatMessage.timeStamp);
+                var utcHours = utcTimeStamp.getUTCHours().toString().padStart(2, "0");
+                var utcMinutes = utcTimeStamp.getUTCMinutes().toString().padStart(2, "0");
+                var utcSeconds = utcTimeStamp.getUTCSeconds().toString().padStart(2, "0");
+
+                var formattedUtcTime = `${utcHours}:${utcMinutes}:${utcSeconds}`;
+
+                var messageData = JSON.parse(message);
+                var messageDiv = document.createElement("div");
+                messageDiv.className = "message";
+                messageDiv.innerHTML = `<p><strong>${chatMessage.userName}</strong> (${formattedUtcTime})</p>
+                                                        <p>${chatMessage.messageContent}</p>`;
+                document.getElementById("real-chat-messages").appendChild(messageDiv);
+            });
+        });
+    </script>
+}

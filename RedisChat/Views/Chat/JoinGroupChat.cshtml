@@ -1,0 +1,29 @@
+﻿@model GroupChat
+
+<p>Xin chào, @ViewBag.UserName! Nhập Phòng và Mật Khẩu</p>
+
+@using (Html.BeginForm("JoinGroupChat", "Chat", FormMethod.Post, new { id = "joinForm" }))
+{
+    <input type="hidden" name="userName" value="@ViewBag.UserName" />
+    <div class="form-group">
+        <label style="font:bolder">Mã ZoMo</label>
+        @Html.TextBoxFor(model => model.GroupName, new { @class = "form-control", id = "groupChatCode" })
+    </div>
+    <div class="form-group">
+        <label style="font:bolder">Mật khẩu</label>
+        @Html.PasswordFor(model => model.Password, new { @class = "form-control", id = "groupChatPass" })
+    </div>
+    <button type="button" class="btn btn-primary" onclick="joinGroup()">Tham Gia Chat</button>
+}
+
+<script>
+    function joinGroup() {
+        const groupName = document.getElementById("groupChatCode").value;
+        const userName = "@ViewBag.UserName";
+        const form = document.getElementById("joinForm");
+        form.submit();
+    }
+</script>
+
+
+
