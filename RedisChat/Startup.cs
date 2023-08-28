@@ -32,6 +32,9 @@ namespace RedisChat
             });
 
             services.AddHttpContextAccessor();
+
+
+
             services.AddSignalR();
 
         }
@@ -61,7 +64,7 @@ namespace RedisChat
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Chat}/{action=JoinOrCreateGroupChat}/{id?}");
-                endpoints.MapHub<ChatHub>("chatHub");
+                endpoints.MapHub<ChatHub>("/chatHub");
             });
         }
     }

@@ -1,0 +1,57 @@
+﻿@model List<ChatMessage>
+@{
+    ViewData["Title"] = @ViewBag.UserName + "- Phòng - " + @ViewBag.GroupName;
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div id="real-chat-messages" style="height: 600px; overflow-y: scroll;">
+    @foreach (var message in Model)
+    {
+        <div class="message">
+            <p><strong>@message.UserName</strong> (@message.TimeStamp.ToString("HH:mm:ss"))</p>
+            <p>@message.MessageContent</p>
+        </div>
+    }
+</div>
+
+<form action="SendMessage" method="post">
+    <input type="text" name="UserName" value="@ViewBag.UserName" hidden />
+    <input type="text" name="GroupName" value="@ViewBag.GroupName" hidden />
+    <input type="text" name="MessageContent" placeholder="Your message" required />
+    <button type="submit">Send</button>
+</form>
+
+@section Scripts {
+    <script>
+        function pollForNewMessages() {
+            setInterval(() => {
+                fetch('/Chat/GetNewMessages?groupName=@ViewBag.GroupName')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Xóa hết tin nhắn cũ trước khi cập nhật mới
+                        var chatContainer = document.getElementById("real-chat-messages");
+                        chatContainer.innerHTML = '';
+
+                        // Cập nhật giao diện người dùng với tin nhắn mới
+                        data.forEach(chatMessage => {
+                            var utcTimeStamp = new Date(chatMessage.timeStamp);
+                            var utcHours = utcTimeStamp.getUTCHours().toString().padStart(2, "0");
+                            var utcMinutes = utcTimeStamp.getUTCMinutes().toString().padStart(2, "0");
+                            var utcSeconds = utcTimeStamp.getUTCSeconds().toString().padStart(2, "0");
+                            var formattedUtcTime = `${utcHours}:${utcMinutes}:${utcSeconds}`;
+
+                            var messageDiv = document.createElement("div");
+                            messageDiv.className = "message";
+                            messageDiv.innerHTML = `<p><strong>${chatMessage.userName}</strong> (${formattedUtcTime})</p>
+                                                                    <p>${chatMessage.messageContent}</p>`;
+
+                            chatContainer.appendChild(messageDiv);
+                        });
+                    });
+            }, 2000); // Gửi yêu cầu mỗi 2 giây
+        }
+
+        pollForNewMessages();
+    </script>
+}

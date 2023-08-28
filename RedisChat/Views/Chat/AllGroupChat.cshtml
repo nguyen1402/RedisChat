@@ -38,7 +38,7 @@
                             }else
                             {
 
-                                <td><a class="btn btn-outline-primary" href="@Url.Action("Index", "Chat", new { groupName = group.GroupName })">Here</a></td>
+                                <td><a class="btn btn-outline-primary" href="@Url.Action("Index", "Chat", new { userName = ViewBag.UserName , groupName = group.GroupName })">Here</a></td>
                             }
                         </tr>
                     }

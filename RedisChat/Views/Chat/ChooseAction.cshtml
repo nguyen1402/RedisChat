@@ -16,16 +16,42 @@
     </div>
 
     <!-- Các input hidden cần thiết -->
+    <div id="chatUrl" data-url="@Url.Action("Index", "Chat")"></div>
     <input type="hidden" name="createGroupChat" id="createGroupChat" value="false" />
 }
+@section Scripts {
+           
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
+    <script>
+        var tenantId = 1099;
+        var workGroupId = 0;
 
-<script>
-    function joinGroupChat() {
-        document.getElementById("createForm").submit();
-    }
+        var nameId = @ViewBag.UserName;
+        function joinGroupChat() {
+            document.getElementById("createForm").submit();
+        }
 
-    function creatGroupChat() {
-        document.getElementById("createGroupChat").value = "true";
-        document.getElementById("createForm").submit();
-    }
-</script>
+        function creatGroupChat() {
+            document.getElementById("createGroupChat").value = "true";
+            document.getElementById("createForm").submit();
+        }
+
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl(`https://localhost:44346/chathub?tenantId=${tenantId}&workGroupId=${workGroupId}`)
+            .build();
+
+        connection.on("openTabsForUser", function (userId, roomCodes) {
+            roomCodes.forEach(function (roomCode) {
+                var chatUrl = document.getElementById("chatUrl").getAttribute("data-url") + "?userName=" + userId + "&groupName=" + roomCode;
+                var newTab = window.open(chatUrl, "_blank");
+            });
+        });
+
+        connection.start().then(function () {
+            console.log("SignalR connection established.");
+            connection.invoke("OpenTabsForUserAsync", nameId);
+        }).catch(function (err) {
+            console.error("SignalR connection error: " + err);
+        });
+    </script>
+}

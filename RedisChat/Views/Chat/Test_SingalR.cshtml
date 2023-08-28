@@ -10,27 +10,27 @@
     @foreach (var message in Model)
     {
         <div class="message">
-            <p><strong>@message.UserName</strong> (@message.TimeStamp.ToString("HH:mm:ss"))</p>
-            <p>@message.MessageContent</p>
+            <p data-user-id="@message.UserName"><strong>@message.UserName</strong> (@message.TimeStamp.ToString("HH:mm:ss")) <button class="kick-button" data-user-name="@message.UserName" data-group-name="@message.GroupName">Kick</button> </p>
+            @*@if (!string.IsNullOrEmpty(message.ImageContent))
+            {
+                <img src="data:image;base64,@message.ImageContent" alt="Hình ảnh" />
+            }
+            else if (!string.IsNullOrEmpty(message.AudioContent))
+            {
+                <audio controls>
+                    <source src="data:audio;base64,@message.AudioContent" type="audio/ogg">
+                    Your browser does not support the audio element.
+                </audio>
+            }
+            else if (!string.IsNullOrEmpty(message.FileContent))
+            {
+                <a href="data:application/octet-stream;base64,@message.FileContent" download="file.txt">Tải xuống tệp</a>
+            }*@
+            <p id="@message.Id">@message.MessageContent <button class="delete-button" data-message-id="@message.Id">Xoá</button></p>
         </div>
     }
 </div>
 <hr />
-
-
-<form id="return-chat" method="post">
-    <div class="row">
-        <p id="token-faile" class="text-center" style="color:red;font-size:larger">Bạn đã bị hết phiên làm việc !</p>
-    </div>
-    <div class="row">
-        <div class="col-auto">
-            <a class="btn btn-outline-success" id="refresh-button" href="@Url.Action("Index", "Chat", new { groupName = @ViewBag.GroupName })">Làm mới</a>
-        </div>
-        <div class="col-auto">
-            <a class="btn btn-outline-danger" id="home-button" href="@Url.Action("JoinOrCreateGroupChat", "Chat")">Trang chủ</a>
-        </div>
-    </div>
-</form>
 
 <form id="chat-form" method="post">
     <div class="row">
@@ -39,6 +39,21 @@
         </div>
         <div class="col-auto">
             <button class="btn btn-outline-primary" id="send-button" type="submit">Gửi</button>
+        </div>
+    </div>
+
+    <div class="row mt-2">
+        <div class="col">
+            <label for="image-file-input">Chọn hình ảnh:</label>
+            <input type="file" id="image-file-input" accept="image/*">
+        </div>
+        <div class="col">
+            <label for="audio-file-input">Chọn âm thanh:</label>
+            <input type="file" id="audio-file-input" accept="audio/*">
+        </div>
+        <div class="col">
+            <label for="file-input">Chọn tệp:</label>
+            <input type="file" id="file-input">
         </div>
     </div>
 </form>
@@ -50,7 +65,20 @@
             .withUrl("/chatHub")
             .build();
 
+        //var tenantId = 1099;
+        //var workgroupId = 0;
+
+        //var connection = new signalR.HubConnectionBuilder()
+        //    .withUrl(`https://localhost:44346/chatHub?tenantId=${tenantId}&workgroupId=${workgroupId}`)
+        //    .build();
+
+        connection.on("Ping", function () {
+            connection.invoke("Pong");
+        });
+
+
         connection.on("ReceiveMessage", function (chatMessage) {
+            console.log(chatMessage)
             var utcTimeStamp = new Date(chatMessage.timeStamp);
             var utcHours = utcTimeStamp.getUTCHours().toString().padStart(2, "0");
             var utcMinutes = utcTimeStamp.getUTCMinutes().toString().padStart(2, "0");
@@ -60,9 +88,90 @@
 
             var messageDiv = document.createElement("div");
             messageDiv.className = "message";
-            messageDiv.innerHTML = `<p><strong>${chatMessage.userName}</strong> (${formattedUtcTime})</p>
-                                                                                                                <p>${chatMessage.messageContent}</p>`;
+
+            var contentHtml = `
+                                                        <p data-user-id="${chatMessage.userName}"><strong>${chatMessage.userName}</strong> (${formattedUtcTime})
+                                    <button class="kick-button" data-user-name="${chatMessage.userName}"
+                                        data-group-name="${chatMessage.groupName}">Kick</button>
+                                </p>
+                                <div class="message-content">
+                                                    <p id="${chatMessage.id}">${chatMessage.messageContent}
+                                                             <button class="delete-button" data-message-id="${chatMessage.id}">Xoá</button>
+                                    </p>
+                            `;
+
+            if (chatMessage.imageContent) {
+                contentHtml += `<img src="data:image;base64,${chatMessage.imageContent}" alt="Hình ảnh" />`;
+            }
+
+            if (chatMessage.audioContent) {
+                contentHtml += `
+                                    <audio controls>
+                                        <source src="data:audio;base64,${chatMessage.audioContent}" type="audio/ogg">
+                                        Your browser does not support the audio element.
+                                    </audio>
+                                `;
+            }
+
+            if (chatMessage.fileContent) {
+                contentHtml += `
+                                    <a href="data:application/octet-stream;base64,${chatMessage.fileContent}" download="file.txt">Tải xuống tệp</a>
+                                `;
+            }
+
+            contentHtml += `</div>`;
+            messageDiv.innerHTML = contentHtml;
+            /*messageDiv.setAttribute("data-message-id", chatMessage.id);*/ // Thêm thuộc tính data-message-id
+
             document.getElementById("real-chat-messages").appendChild(messageDiv);
+        });
+
+        function sendFileMessage(fileInput, messageType) {
+            var selectedFile = fileInput.files[0];
+            var reader = new FileReader();
+
+            reader.onload = function (event) {
+                var base64Data = event.target.result.split(",")[1];
+                // Gọi phương thức gửi tin nhắn với dữ liệu base64Data và loại tin nhắn messageType
+                sendMessageWithAttachment(base64Data, messageType);
+            };
+
+            reader.readAsDataURL(selectedFile);
+        }
+
+        function sendMessageWithAttachment(base64Data, messageType) {
+            connection.invoke("SendMessageToRoomAsync", {
+                userName: "@ViewBag.UserName",
+                groupName: "@ViewBag.GroupName",
+                messageContent: "",
+                [messageType]: base64Data
+            }).catch(function (err) {
+                console.error(err.toString());
+            });
+        }
+
+
+        document.addEventListener("click", function (event) {
+            if (event.target.classList.contains("delete-button")) {
+                var messageId = event.target.getAttribute("data-message-id");
+                var roomCode = "@ViewBag.GroupName";
+                // Đi từ nút "Xoá" lên đến phần tử chứa thông tin tin nhắn
+                var messageElement = event.target.closest(".message");
+                if (messageElement) {
+                    var idUser = messageElement.querySelector("p[data-user-id]").getAttribute("data-user-id");
+
+                    connection.invoke("DeleteMessageAsync", messageId, roomCode, idUser)
+                        .catch(function (err) {
+                            console.error(err.toString());
+                        });
+                }
+            }
+        });
+        connection.on("MessageDeleted", function (messageId) {
+            var messageElement = document.getElementById(messageId);
+            if (messageElement) {
+                messageElement.remove();
+            }
         });
 
         document.getElementById("chat-form").addEventListener("submit", function (event) {
@@ -70,9 +179,9 @@
             var messageInput = document.querySelector("input[name='message']");
             var message = messageInput.value.trim();
             if (message) {
-                connection.invoke("SendMessage", {
-                    userName: "@ViewBag.UserName",
-                    groupName: "@ViewBag.GroupName",
+                connection.invoke("SendMessageToRoomAsync", {
+                    idUser: 999,
+                    roomCode: "@ViewBag.GroupName",
                     messageContent: message,
                 }).catch(function (err) {
                     console.error(err.toString());
@@ -81,32 +190,51 @@
             }
         });
 
-        connection.on("UpdateConnectionStatus", function (isConnected) {
-            if (isConnected) {
-                document.getElementById("send-button").style.display = "block";
-                document.getElementById("text-ip").style.display = "block";
-                document.getElementById("refresh-button").style.display = "none";
-                document.getElementById("home-button").style.display = "none";
-                document.getElementById("token-faile").style.display = "none";
-            } else {
-                document.getElementById("send-button").style.display = "none";
-                document.getElementById("text-ip").style.display = "none";
-                document.getElementById("refresh-button").style.display = "block";
-                document.getElementById("home-button").style.display = "block";
-                document.getElementById("token-faile").style.display = "block";
-            }
+        document.getElementById("image-file-input").addEventListener("change", function () {
+            sendFileMessage(this, "imageContent");
+        });
+
+        document.getElementById("audio-file-input").addEventListener("change", function () {
+            sendFileMessage(this, "audioContent");
+        });
+
+        document.getElementById("file-input").addEventListener("change", function () {
+            sendFileMessage(this, "fileContent");
+        });
+
+        // Gắn sự kiện khi trang web tải xong
+        document.addEventListener("DOMContentLoaded", function () {
+            // Lấy tất cả các nút kick
+            var kickButtons = document.querySelectorAll(".kick-button");
+
+            // Lặp qua từng nút và gắn sự kiện
+            kickButtons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    var userName = button.getAttribute("data-user-name");
+                    var groupName = button.getAttribute("data-group-name");
+
+                    // Gọi phương thức kick bên client và truyền userName và groupName
+                    connection.invoke("KickUserAsync", userName, groupName);
+                });
+            });
         });
 
         connection.start().then(function () {
-            joinGroup("@ViewBag.GroupName");
+            joinGroup("@ViewBag.GroupName", "@ViewBag.UserName");
         }).catch(function (err) {
             console.error(err.toString());
         });
 
-        function joinGroup(groupName) {
-            connection.invoke("JoinGroup", groupName).catch(function (err) {
+        function joinGroup(groupName, userName) {
+            connection.invoke("JoinRoomAsync", groupName, userName).catch(function (err) {
                 console.error(err.toString());
             });
         }
+
+        function scrollToBottom() {
+            var chatMessagesDiv = document.getElementById('real-chat-messages');
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+        }
+        scrollToBottom();
     </script>
 }

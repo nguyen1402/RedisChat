@@ -20,9 +20,9 @@ public class ChatController : Controller
         _hubContext = hubContext;
     }
     #region Form hiển thị tin nhắn
-    public async Task<IActionResult> Index(string groupName)
+    public async Task<IActionResult> Index(string userName,string groupName)
     {
-        ViewBag.UserName = HttpContext.Session.GetString("UserName");
+        ViewBag.UserName = userName;
         ViewBag.GroupName = groupName;
         var db = _redisConnection.GetDatabase();
         var chatMessages = db.ListRange($"{groupName}");
@@ -35,6 +35,17 @@ public class ChatController : Controller
             var chatMessage = JsonConvert.DeserializeObject<ChatMessage>(messageString);
             chatMessageList.Add(chatMessage);
         }
+        // bool hasNewMessage = false;
+        // Subscribe sự kiện mới tin nhắn được gửi đến trong Redis
+        //var sub = _redisConnection.GetSubscriber();
+        //sub.Subscribe(groupName, (channel, value) =>
+        // {
+        //var newMessageString = (string)value;
+        //var newChatMessage = JsonConvert.DeserializeObject<ChatMessage>(newMessageString);
+        //chatMessageList.Add(newChatMessage);
+        //hasNewMessage = true;
+        //});
+        //ViewBag.HasNewMessage = hasNewMessage;
         return View(chatMessageList);
     }
     #endregion
@@ -175,6 +186,7 @@ public class ChatController : Controller
         {
             return RedirectToAction("Index", new
             {
+                userName = HttpContext.Session.GetString("UserName"),
                 groupName = model.GroupName
             });
         }
@@ -209,7 +221,25 @@ public class ChatController : Controller
     }
     #endregion
 
-    #region Form Create Group Chat
+    #region Lấy Tin Nhắn Mới
+    public IActionResult GetNewMessages(string groupName)
+    {
+        var db = _redisConnection.GetDatabase();
+        var chatMessages = db.ListRange($"{groupName}");
+        List<ChatMessage> newMessages = new List<ChatMessage>();
+        foreach (var redisMessage in chatMessages)
+        {
+            var messageString = (string)redisMessage;
+            var chatMessage = JsonConvert.DeserializeObject<ChatMessage>(messageString);
+            newMessages.Add(chatMessage);
+        }
+        return Json(newMessages);
+    }
+
+
+    #endregion
+
+    #region Form Get All Group Chat
     public IActionResult AllGroupChat()
     {
         var userName = HttpContext.Session.GetString("UserName");
